@@ -92,6 +92,10 @@ class Cash():
             '1gbp':10
             }
         self.coinsInserted = []
+        self.poundScaleFactor = 100
+    
+    def getPoundScaleFactor(self):
+        return self.poundScaleFactor
         
     def addToBank(self):
         for coin in self.coinsInserted:
@@ -116,9 +120,9 @@ class Cash():
         if string in self.bank.keys():
             if string.endswith('gbp'):
                 c = filter(None, string.split('gbp'))
-                return int(c[0])
+                return int(c[0])*self.poundScaleFactor
             elif string.endswith('p'):
-                return int(string[:-1])*0.01
+                return int(string[:-1])
         else:
             return False
         
@@ -152,8 +156,8 @@ class Cash():
                         rem -= coin
                         coinsToReturn.append(coinStr)
                         i += 1
-                    elif rem == 0:
-                        return coinsToReturn
+                        if rem == 0:
+                            return coinsToReturn
                     else:
                         break
             print rem, coinsToReturn
@@ -193,7 +197,7 @@ class Stock():
         print s
         
     def getProductPrice(self, product):
-        return self.stock[product]['price']
+        return self.stock[product]['price']*Cash().getPoundScaleFactor()
     
     def getProductQuantity(self, product):
         return self.stock[product]['qty']

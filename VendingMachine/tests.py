@@ -3,7 +3,7 @@
 import unittest
 from vendingMachine import Cash
 
-class TestMXSCommands(unittest.TestCase):
+class TestCash(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cash = Cash()
@@ -14,7 +14,7 @@ class TestMXSCommands(unittest.TestCase):
 
     def testConvertStringToCash(self):
         result = sorted([self.cash.convertStringToCash(i) for i in self.cash.bank.keys()], reverse=True)
-        test = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01]
+        test = [100, 50, 20, 10, 5, 2, 1]
         self.assertEqual(result, test)
         
 if __name__ == '__main__':
