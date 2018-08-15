@@ -1,1 +1,1 @@
-A Python implementation of a virtual Vending Machine
+Python 2.7 implementation of a virtual Vending Machine
