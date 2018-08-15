@@ -2,58 +2,113 @@
 import time
 
 class VendingMachine():
+    '''
+    This class runs the program loop and includes the main logic.
+    Most methods are provided by Stock() and Cash() classes (see below)
+    '''
     def __init__(self):
         self.running = True
         self.Stock = Stock()
         self.Cash = Cash()
         self.help()
-        self.Stock.getCurrentStock()
     
     def help(self):
         s = '''
-        ============= WELCOME =============
-            What would you like to buy?
-            
-        ================ HELP ================
-        Usage:
-            1. Type the name of the item
-            2. Insert coins in following ways:
-                a: all in one row - 1p 10p 50p 1gbp
-                b: or enter one-by-one
-                
-        Accepted coins:
-            1p, 2p, 5p, 10p, 20p, 50p, 1gbp
-            
-        Type 'exit' to quit application
-        ======================================
-        '''
+======= Welcome to Python Vending Machine! =======
+    
+    
+====================== HELP ======================
+Usage:
+    1. Select operation type (follow instructions)
+    2. If buying, type the name of the item
+    3. Insert coins one-by-one
+        
+Accepted coins:
+    1p, 2p, 5p, 10p, 20p, 50p, 1 (one pound)
+    
+Type 'exit' to quit application at any time
+=================================================='''
+        print s
+    
+    def manageHelp(self):
+        s = '''
+===========================================
+The following operations are available:
+funds - displays available funds
+stock - displays current stock of products
+coins - add coins to the machine
+add - add existing products (re-stock)
+price - change prices of existing products
+new - add a new product
+        
+back - to go to the previous menu
+==========================================='''
         print s
     
     def run(self):
         while self.running:
             newSession = False
-            item = raw_input('Please input Item Name: ')
-            if item in self.Stock.stock.keys():
-                qty = self.Stock.getProductQuantity(item)
-                if qty == 0:
-                    print 'Sorry, this Item is out of stock...'
-                else:
-                    insertedCash = 0
-                    price = self.Stock.getProductPrice(item)
-                    while not newSession and self.running:
-                        s = raw_input('Please insert Coins: ')
-                        if s == 'exit': self.stop()
-                        coins = filter(None, s.split())
-                        for c in coins:
-                            if insertedCash < price:
-                                self.Cash.insertCoin(c)
-                                cash = self.Cash.convertStringToCash(c)
+            s = raw_input('Please select operation: "buy" or "manage"\n>>> ')
+            if s == 'manage':
+                while not newSession and self.running:
+                    opr = raw_input('Type "help" or enter operation\n>>> ')
+                    if opr == 'help':
+                        self.manageHelp()
+                    if opr == 'funds':
+                        self.Cash.getAvailableFunds()
+                    if opr == 'stock':
+                        self.Stock.getCurrentStock()
+                    if opr == 'coins':
+                        coin = raw_input('Please enter coin type.\n>>> ')
+                        quantity = raw_input('Please enter quantity.\n>>> ')
+                        self.Cash.addCoins(coin, quantity)
+                    if opr == 'add':
+                        product = raw_input('Please enter existing product name.\n>>> ')
+                        quantity = raw_input('Please enter quantity.\n>>> ')
+                        self.Stock.reStock(product, quantity)
+                    if opr == 'price':
+                        product = raw_input('Please enter existing product name.\n>>> ')
+                        price = raw_input('Please enter new price.\n>>> ')
+                        self.Stock.changeProductPrice(product, price)
+                    if opr == 'new':
+                        product = raw_input('Please enter new product name.\n>>> ')
+                        price = raw_input('Please enter price.\n>>> ')
+                        quantity = raw_input('Please enter quantity.\n>>> ')
+                        self.Stock.addNewProduct(product, price, quantity)
+                    if opr == 'back':
+                        newSession = True
+                        break
+                    if opr == 'exit':
+                        self.stop()
+                
+            if s == 'buy':
+                self.Stock.getCurrentStock()
+                while not newSession and self.running:   
+                    item = raw_input('What would you like to buy?\n>>> ')   
+                    if item == 'exit':
+                        self.stop()  
+                    if item in self.Stock.stock.keys():
+                        qty = self.Stock.getProductQuantity(item)
+                        if qty == 0:
+                            print 'Sorry, this Item is out of stock...'
+                        
+                        else:
+                            insertedCash = 0
+                            price = self.Stock.getProductPrice(item)
+                            remainder = price - insertedCash
+                            while not newSession and self.running:
+                                s = raw_input('Please insert £{p}:\n>>> '.format(p=remainder/self.Cash.poundScaleFactor))
+                                if s == 'exit': self.stop()
+                                cash = self.Cash.convertStringToCash(s)
+                                
                                 if cash:
+                                    self.Cash.insertCoinString(s)
                                     insertedCash += cash
+                                    remainder -= cash
                                     if insertedCash >= price:
                                         hasChange = self.Cash.giveChange(price, insertedCash)
                                         if hasChange:
-                                            self.giveItem(item)
+                                            self.sellItem(item)
                                             print 'Your change: ' + str(hasChange)
                                             newSession = True
                                         else:
@@ -63,10 +118,10 @@ class VendingMachine():
                                 else:
                                     if self.running:
                                         print 'Bad input!'
-            else:
-                if self.running:
-                    print 'No such item! Try again.'
-            if item == 'exit': self.stop()
+                    else:
+                        if self.running:
+                            print 'No such item! Try again.'
+            if s == 'exit': self.stop()
     
     def stop(self):
         if self.running:
@@ -75,12 +130,17 @@ class VendingMachine():
             time.sleep(1.5)
             self.running = False
             
-    def giveItem(self, product):
+    def sellItem(self, product):
         self.Stock.giveItem(product)
+        self.Cash.addToBank()
         self.Stock.getCurrentStock()
         print "Enjoy your {p}!".format(p=product)
 
 class Cash():
+    '''
+    This class manages all monetary operations (apart from stock prices).
+    The same data structure (self.bank) is used throughout the program, to avoid duplicate code.
+    '''
     def __init__(self):
         self.bank = {
             '1p':10,
@@ -89,7 +149,7 @@ class Cash():
             '10p':10,
             '20p':10,
             '50p':10,
-            '1gbp':10
+            '1':10 # £1
             }
         self.coinsInserted = []
         self.poundScaleFactor = 100
@@ -98,17 +158,27 @@ class Cash():
         return self.poundScaleFactor
         
     def addToBank(self):
-        for coin in self.coinsInserted:
+        for coin in self.coinsInserted[:]: # make a in-place slice copy
             if coin in self.bank.keys():
                 self.bank[coin] += 1
                 self.coinsInserted.remove(coin)
-        if self.coinsInserted:
-            self.returnCoins()
+                
+    def addCoins(self, coin, quantity):
+        if coin in self.bank.keys():
+            try:
+                self.bank[coin] += int(quantity)
+                print 'Coins added!'
+            except:
+                print 'Bad input!'
+        else:
+            print 'Bad input!'
             
     def getAvailableFunds(self):
+        for key, val in self.bank.iteritems():
+            print '{k} : {v}'.format(k=key, v=val)
         return self.bank
     
-    def insertCoin(self, string):
+    def insertCoinString(self, string):
         self.coinsInserted.append(string)
         
     def returnCoins(self):
@@ -118,9 +188,8 @@ class Cash():
                 
     def convertStringToCash(self, string):
         if string in self.bank.keys():
-            if string.endswith('gbp'):
-                c = filter(None, string.split('gbp'))
-                return int(c[0])*self.poundScaleFactor
+            if string == '1':
+                return int(string)*self.poundScaleFactor
             elif string.endswith('p'):
                 return int(string[:-1])
         else:
@@ -139,19 +208,20 @@ class Cash():
         return self.coinsInserted
     
     def giveChange(self, price, cash):
+        '''
+        A greedy change-making algorithm without recursion.
+        Aims to return the highest possible values.
+        Operates on a finite amount of coins (self.bank).
+        '''
         if price == cash:
             return 'No change needed'
         else:
-            change = cash - price
-            changeStr = self.convertCashToString(change)
-            if changeStr in self.bank.keys() and self.bank[changeStr] > 0:
-                return changeStr
             coinsToReturn = []
-            rem = change
+            rem = cash - price
             for coin in sorted([self.convertStringToCash(i) for i in self.bank.keys()], reverse=True):
                 i = 0
                 coinStr = self.convertCashToString(coin)
-                while i != self.bank[coinStr]:
+                while i != self.bank[coinStr]: # while there are still coins of this type in the bank
                     if (rem - coin) >= 0:
                         rem -= coin
                         coinsToReturn.append(coinStr)
@@ -160,29 +230,47 @@ class Cash():
                             return coinsToReturn
                     else:
                         break
-            print rem, coinsToReturn
             return False
     
 class Stock():
+    '''
+    This class manages the available stock of products.
+    The same data structure (self.stock) is used throughout the program, to avoid duplicate code.
+    '''
     def __init__(self):
         self.stock = {
-            'spam':{'price':2.0, 'qty':0},
+            'spam':{'price':2.09, 'qty':1},
             'bread':{'price':1.6, 'qty':2},
-            'juice':{'price':1.7, 'qty':3},
-            'water':{'price':1.0, 'qty':1}
+            'juice':{'price':1.8, 'qty':3},
+            'water':{'price':1.0, 'qty':0}
             }
         
     def reStock(self, product, quantity):
         if product in self.stock.keys():
-            self.stock[product]['qty'] += quantity
+            try:
+                self.stock[product]['qty'] += int(quantity)
+                print 'Product(s) added!'
+            except:
+                print 'Bad input!'
+        else:
+            print 'Bad input!'
     
     def changeProductPrice(self, product, price):
         if product in self.stock.keys():
-            self.stock[product]['price'] = price
+            try:
+                self.stock[product]['price'] = float(price)
+                print 'Price changed!'
+            except:
+                print 'Bad input!'
+        else:
+            print 'Bad input!'
             
     def addNewProduct(self, product, price, quantity):
-        self.stock[product]['price'] = price
-        self.stock[product]['qty'] = quantity
+        try:
+            self.stock[product] = {'price':float(price), 'qty':int(quantity)}
+            print 'Product added!'
+        except:
+            print 'Bad input!'
         
     def getCurrentStock(self):
         s = '=== CURRENT STOCK ===\n'
@@ -208,3 +296,4 @@ class Stock():
 if __name__ == '__main__':
     machine = VendingMachine()
     machine.run()
+    
