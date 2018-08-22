@@ -97,7 +97,7 @@ back - to go to the previous menu
                             price = self.Stock.getProductPrice(item)
                             remainder = price - insertedCash
                             while not newSession and self.running:
-                                s = raw_input('Please insert £{p}:\n>>> '.format(p=remainder/self.Cash.poundScaleFactor))
+                                s = raw_input(u'Please insert £{p}:\n>>> '.format(p=remainder/self.Cash.poundScaleFactor))
                                 if s == 'exit': self.stop()
                                 cash = self.Cash.convertStringToCash(s)
                                 
@@ -166,12 +166,12 @@ class Cash():
     def addCoins(self, coin, quantity):
         if coin in self.bank.keys():
             try:
-                self.bank[coin] += int(quantity)
+                self.bank[coin] += abs(int(quantity))
                 print 'Coins added!'
             except:
-                print 'Bad input!'
+                print 'Quantity must be a number!'
         else:
-            print 'Bad input!'
+            print 'Unknown coin type!'
             
     def getAvailableFunds(self):
         for key, val in self.bank.iteritems():
@@ -248,33 +248,33 @@ class Stock():
     def reStock(self, product, quantity):
         if product in self.stock.keys():
             try:
-                self.stock[product]['qty'] += int(quantity)
+                self.stock[product]['qty'] += abs(int(quantity))
                 print 'Product(s) added!'
             except:
-                print 'Bad input!'
+                print 'Quantity must be a number!'
         else:
-            print 'Bad input!'
+            print 'No such item!'
     
     def changeProductPrice(self, product, price):
         if product in self.stock.keys():
             try:
-                self.stock[product]['price'] = float(price)
+                self.stock[product]['price'] = abs(float(price))
                 print 'Price changed!'
             except:
-                print 'Bad input!'
+                print 'Price must be a number!'
         else:
-            print 'Bad input!'
+            print 'No such item!'
             
     def addNewProduct(self, product, price, quantity):
         try:
-            self.stock[product] = {'price':float(price), 'qty':int(quantity)}
+            self.stock[product] = {'price':abs(float(price)), 'qty':abs(int(quantity))}
             print 'Product added!'
         except:
-            print 'Bad input!'
+            print 'Price and Quantity must be numbers!'
         
     def getCurrentStock(self):
         s = '=== CURRENT STOCK ===\n'
-        s += 'Item | £ | Qty\n'
+        s += u'Item | £ | Qty\n'
         s += '---------------\n'
         for product, options in self.stock.iteritems():
             s += product + ' | '
