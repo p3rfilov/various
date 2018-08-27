@@ -102,7 +102,7 @@ back - to go to the previous menu
                                 cash = self.Cash.convertStringToCash(s)
                                 
                                 if cash:
-                                    self.Cash.insertCoinString(s)
+                                    self.Cash.insertCoin(s)
                                     insertedCash += cash
                                     remainder -= cash
                                     if insertedCash >= price:
@@ -132,7 +132,7 @@ back - to go to the previous menu
             
     def sellItem(self, product):
         self.Stock.giveItem(product)
-        self.Cash.addToBank()
+        self.Cash.finishOperation()
         self.Stock.getCurrentStock()
         print "Enjoy your {p}!".format(p=product)
 
@@ -157,17 +157,15 @@ class Cash():
     def getPoundScaleFactor(self):
         return self.poundScaleFactor
         
-    def addToBank(self):
-        for coin in self.coinsInserted[:]: # make a in-place slice copy
-            if coin in self.bank.keys():
-                self.bank[coin] += 1
-                self.coinsInserted.remove(coin)
+    def finishOperation(self):
+        self.coinsInserted = []
                 
     def addCoins(self, coin, quantity):
         if coin in self.bank.keys():
             try:
-                self.bank[coin] += abs(int(quantity))
-                print 'Coins added!'
+                self.bank[coin] += int(quantity)
+                if self.bank[coin] < 0: self.bank[coin] = 0
+                print 'Coins added/removed!'
             except:
                 print 'Quantity must be a number!'
         else:
@@ -178,11 +176,14 @@ class Cash():
             print '{k} : {v}'.format(k=key, v=val)
         return self.bank
     
-    def insertCoinString(self, string):
-        self.coinsInserted.append(string)
+    def insertCoin(self, coin):
+        self.bank[coin] += 1
+        self.coinsInserted.append(coin)
         
     def returnCoins(self):
         if self.coinsInserted:
+            for coin in self.coinsInserted:
+                self.bank[coin] -= 1
             print 'Returning coins: ' + ', '.join(self.coinsInserted)
             self.coinsInserted = []
                 
@@ -207,6 +208,9 @@ class Cash():
     def getInsertedCoins(self):
         return self.coinsInserted
     
+    def getCoinIntegerList(self):
+        return [self.convertStringToCash(i) for i in self.bank.keys()]
+    
     def giveChange(self, price, cash):
         '''
         A greedy change-making algorithm without recursion.
@@ -218,7 +222,7 @@ class Cash():
         else:
             coinsToReturn = []
             rem = cash - price
-            for coin in sorted([self.convertStringToCash(i) for i in self.bank.keys()], reverse=True):
+            for coin in sorted(self.getCoinIntegerList(), reverse=True):
                 i = 0
                 coinStr = self.convertCashToString(coin)
                 while i != self.bank[coinStr]: # while there are still coins of this type in the bank
@@ -227,10 +231,15 @@ class Cash():
                         coinsToReturn.append(coinStr)
                         i += 1
                         if rem == 0:
+                            self.removeChangeFromBank(coinsToReturn)
                             return coinsToReturn
                     else:
                         break
             return False
+        
+    def removeChangeFromBank(self, changeList):
+        for coin in changeList:
+            self.bank[coin] -= 1
     
 class Stock():
     '''
@@ -242,8 +251,9 @@ class Stock():
             'spam':{'price':2.09, 'qty':1},
             'bread':{'price':1.6, 'qty':2},
             'juice':{'price':1.8, 'qty':3},
-            'water':{'price':1.0, 'qty':0}
+            'water':{'price':1.0, 'qty':1}
             }
+        self.Cash = Cash()
         
     def reStock(self, product, quantity):
         if product in self.stock.keys():
@@ -258,17 +268,29 @@ class Stock():
     def changeProductPrice(self, product, price):
         if product in self.stock.keys():
             try:
-                self.stock[product]['price'] = abs(float(price))
-                print 'Price changed!'
+                if self.isPriceLegal(price):
+                    self.stock[product]['price'] = abs(float(price))
+                    print 'Price changed!'
             except:
                 print 'Price must be a number!'
         else:
             print 'No such item!'
+    
+    def isPriceLegal(self, price):
+        '''Makes sure the price doen't include coin fractions'''
+        newPrice = abs(float(price))
+        smallestCoin = min(self.Cash.getCoinIntegerList())
+        if (newPrice * self.Cash.getPoundScaleFactor()) % smallestCoin == 0:
+            return True
+        else:
+            print "Incorrect price entered!"
+            return False
             
     def addNewProduct(self, product, price, quantity):
         try:
-            self.stock[product] = {'price':abs(float(price)), 'qty':abs(int(quantity))}
-            print 'Product added!'
+            if self.isPriceLegal(price):
+                self.stock[product] = {'price':abs(float(price)), 'qty':abs(int(quantity))}
+                print 'Product added!'
         except:
             print 'Price and Quantity must be numbers!'
         

@@ -46,5 +46,18 @@ class TestCash(unittest.TestCase):
         test = False
         self.assertEqual(result, test)
         
+    def testGiveChangeFromInsertedCash(self):
+        self.cash = Cash() # reset coin amount
+        self.cash.bank['1p'] = 0
+        for coin in ['50p', '1p']: self.cash.insertCoin(coin)
+        
+        r1 = self.cash.giveChange(50, 51)
+        r2 = self.cash.bank['1p']
+        t1 = ['1p',]
+        t2 = 0
+        
+        self.assertEqual(r1, t1)
+        self.assertEqual(r2, t2)
+        
 if __name__ == '__main__':
     unittest.main()
