@@ -7,7 +7,7 @@ class VendingMachine():
     Most methods are provided by Stock() and Cash() classes (see below)
     '''
     def __init__(self):
-        self.running = True
+        self.running = False
         self.Stock = Stock()
         self.Cash = Cash()
         self.help()
@@ -46,6 +46,7 @@ back - to go to the previous menu
         print s
     
     def run(self):
+        self.running = True
         while self.running:
             newSession = False
             s = raw_input('Please select operation: "buy" or "manage"\n>>> ')
@@ -54,40 +55,40 @@ back - to go to the previous menu
                     opr = raw_input('Type "help" or enter operation\n>>> ')
                     if opr == 'help':
                         self.manageHelp()
-                    if opr == 'funds':
+                    elif opr == 'funds':
                         self.Cash.getAvailableFunds()
-                    if opr == 'stock':
+                    elif opr == 'stock':
                         self.Stock.getCurrentStock()
-                    if opr == 'coins':
+                    elif opr == 'coins':
                         coin = raw_input('Please enter coin type.\n>>> ')
                         quantity = raw_input('Please enter quantity.\n>>> ')
                         self.Cash.addCoins(coin, quantity)
-                    if opr == 'add':
+                    elif opr == 'add':
                         product = raw_input('Please enter existing product name.\n>>> ')
                         quantity = raw_input('Please enter quantity.\n>>> ')
                         self.Stock.reStock(product, quantity)
-                    if opr == 'price':
+                    elif opr == 'price':
                         product = raw_input('Please enter existing product name.\n>>> ')
                         price = raw_input('Please enter new price.\n>>> ')
                         self.Stock.changeProductPrice(product, price)
-                    if opr == 'new':
+                    elif opr == 'new':
                         product = raw_input('Please enter new product name.\n>>> ')
                         price = raw_input('Please enter price.\n>>> ')
                         quantity = raw_input('Please enter quantity.\n>>> ')
                         self.Stock.addNewProduct(product, price, quantity)
-                    if opr == 'back':
+                    elif opr == 'back':
                         newSession = True
                         break
-                    if opr == 'exit':
+                    elif opr == 'exit':
                         self.stop()
                 
-            if s == 'buy':
+            elif s == 'buy':
                 self.Stock.getCurrentStock()
                 while not newSession and self.running:   
                     item = raw_input('What would you like to buy?\n>>> ')   
                     if item == 'exit':
                         self.stop()  
-                    if item in self.Stock.stock.keys():
+                    elif item in self.Stock.stock.keys():
                         qty = self.Stock.getProductQuantity(item)
                         if qty == 0:
                             print 'Sorry, this Item is out of stock...'
@@ -307,7 +308,7 @@ class Stock():
         print s
         
     def getProductPrice(self, product):
-        return self.stock[product]['price']*Cash().getPoundScaleFactor()
+        return self.stock[product]['price'] * self.Cash.getPoundScaleFactor()
     
     def getProductQuantity(self, product):
         return self.stock[product]['qty']
